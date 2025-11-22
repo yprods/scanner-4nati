@@ -14,12 +14,65 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
+// בדיקת הרשאות מצלמה
+async function checkCameraPermission() {
+    try {
+        // בדיקה אם יש גישה ל-navigator.mediaDevices
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            return { granted: false, error: 'הדפדפן לא תומך בגישה למצלמה' };
+        }
+
+        // בדיקת הרשאה קיימת
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        // אם הצלחנו, נסגור את ה-stream מיד ונחזיר true
+        stream.getTracks().forEach(track => track.stop());
+        return { granted: true };
+    } catch (err) {
+        if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+            return { granted: false, error: 'הרשאה למצלמה נדחתה' };
+        } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+            return { granted: false, error: 'לא נמצאה מצלמה' };
+        }
+        return { granted: false, error: err.message };
+    }
+}
+
+// בקשת הרשאה למצלמה
+async function requestCameraPermission() {
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+            video: { 
+                facingMode: 'environment' // מצלמה אחורית ב-mobile
+            } 
+        });
+        // נסגור את ה-stream מיד - רק רצינו לבדוק הרשאה
+        stream.getTracks().forEach(track => track.stop());
+        return { granted: true };
+    } catch (err) {
+        if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+            return { granted: false, error: 'הרשאה למצלמה נדחתה. אנא אפשר גישה למצלמה בהגדרות הדפדפן.' };
+        }
+        return { granted: false, error: err.message };
+    }
+}
+
 async function startScanner() {
     // אם הסורק כבר פעיל, לא ניצור חדש
     if (isScanning || html5Qrcode) return;
 
     const readerEl = document.getElementById('reader');
     if (!readerEl) return;
+
+    // בדיקת הרשאות לפני התחלת הסורק
+    const permissionCheck = await checkCameraPermission();
+    if (!permissionCheck.granted) {
+        // נסה לבקש הרשאה
+        const permissionRequest = await requestCameraPermission();
+        if (!permissionRequest.granted) {
+            showPermissionError(permissionRequest.error || permissionCheck.error);
+            return;
+        }
+    }
 
     try {
         // יצירת אובייקט Html5Qrcode חדש
@@ -64,11 +117,74 @@ async function startScanner() {
         isScanning = true;
         console.log('סורק ברקודים הופעל בהצלחה');
         
+        // הסתרת הודעת שגיאה אם הייתה
+        hidePermissionError();
+        
     } catch (err) {
         console.error('שגיאה בהפעלת הסורק:', err);
-        alert('שגיאה בהפעלת המצלמה. אנא ודא שהרשאת למצלמה ניתנה.');
+        
+        // בדיקה אם זו שגיאת הרשאה
+        if (err.name === 'NotAllowedError' || err.message.includes('permission') || err.message.includes('Permission')) {
+            showPermissionError('הרשאה למצלמה נדחתה. אנא אפשר גישה למצלמה בהגדרות הדפדפן.');
+        } else {
+            alert('שגיאה בהפעלת המצלמה: ' + err.message);
+        }
         html5Qrcode = null;
     }
+}
+
+// שמירת תוכן מקורי של scannerSection
+let originalScannerContent = null;
+
+// הצגת הודעת שגיאת הרשאה
+function showPermissionError(message) {
+    const scannerSection = document.getElementById('scannerSection');
+    if (scannerSection) {
+        // שמירת התוכן המקורי אם עדיין לא נשמר
+        if (!originalScannerContent) {
+            originalScannerContent = scannerSection.innerHTML;
+        }
+        
+        scannerSection.innerHTML = `
+            <div style="padding: 20px; text-align: center;">
+                <div style="font-size: 48px; margin-bottom: 20px;">📷</div>
+                <h3 style="color: #d32f2f; margin-bottom: 10px;">אין גישה למצלמה</h3>
+                <p style="color: #666; margin-bottom: 20px; line-height: 1.6;">${message}</p>
+                <button id="retryPermissionBtn" style="padding: 12px 24px; background-color: #6366f1; color: white; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; margin-bottom: 10px;">
+                    נסה שוב
+                </button>
+                <p style="margin-top: 20px; font-size: 14px; color: #999; line-height: 1.6;">
+                    <strong>ב-iPhone Safari:</strong><br/>
+                    הגדרות > Safari > מצלמה > אפשר
+                </p>
+            </div>
+        `;
+        
+        // הוספת event listener לכפתור
+        const retryBtn = document.getElementById('retryPermissionBtn');
+        if (retryBtn) {
+            retryBtn.addEventListener('click', () => {
+                restoreScannerContent();
+                startScanner();
+            });
+        }
+    }
+}
+
+// שחזור תוכן מקורי
+function restoreScannerContent() {
+    const scannerSection = document.getElementById('scannerSection');
+    if (scannerSection && originalScannerContent) {
+        scannerSection.innerHTML = originalScannerContent;
+        // הוספת event listeners מחדש
+        const toggleBtn = document.getElementById('toggleManualButton');
+        if(toggleBtn) toggleBtn.addEventListener('click', toggleManualInput);
+    }
+}
+
+// הסתרת הודעת שגיאה
+function hidePermissionError() {
+    restoreScannerContent();
 }
 
 function onScanSuccess(decodedText, decodedResult) {
