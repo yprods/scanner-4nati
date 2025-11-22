@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>מנהל ספירת מלאי</title>
+    <link rel="stylesheet" href="styles.css" />
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        /* סטיילינג בסיסי נוסף לדשבורד */
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 15px; margin-bottom: 30px; }
+        .stat-box { border: 1px solid #ccc; padding: 15px; text-align: center; border-radius: 8px; background-color: #f9f9f9; }
+        .stat-box h4 { margin: 0 0 5px 0; font-size: 14px; color: #555; }
+        .stat-box p { font-size: 24px; font-weight: bold; margin: 0; }
+        .upload-section, .list-controls { margin-bottom: 25px; padding: 15px; border: 1px solid #eee; border-radius: 8px; }
+        select, input[type="file"], button { padding: 8px; margin-left: 10px; }
+        #uploadRes { padding: 10px; margin-top: 10px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; direction: rtl;}
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: right; font-size: 14px; }
+        th { background-color: #f2f2f2; }
+    </style>
+</head>
+<body>
+<header>
+    <img src="https://www.barzilaimc.org.il/_Uploads/dbsBanners/nojc1.jpg?BannerID=39" alt="לוגו בית חולים" class="header-logo" style="max-width: 150px;">
+    <h1>פאנל ניהול ספירת מלאי</h1>
+</header>
+<main>
+
+    <h2>📊 סטטיסטיקות</h2>
+    <div class="stats-grid">
+        <div class="stat-box"><h4>סה"כ פריטים (מקור)</h4><p id="statTotal">טוען...</p></div>
+        <div class="stat-box"><h4>פריטים שנסרקו</h4><p id="statScanned">טוען...</p></div>
+        <div class="stat-box" style="background-color: #d4edda;"><h4>תקין (✅)</h4><p id="statGood">טוען...</p></div>
+        <div class="stat-box" style="background-color: #f8d7da;"><h4>לא תקין (❌)</h4><p id="statBad">טוען...</p></div>
+        <div class="stat-box" style="background-color: #fff3cd;"><h4>לא רשום (⚠️)</h4><p id="statUnreg">טוען...</p></div>
+    </div>
+
+    <div class="upload-section">
+        <h2>⬆️ העלאת קובץ מלאי (Excel)</h2>
+        <input type="file" id="excelFile" accept=".xlsx, .xls, .csv">
+        <button id="uploadBtn">העלה קובץ</button>
+        <div id="uploadRes" class="msg"></div>
+    </div>
+
+    <h2>📝 רשימת פריטים</h2>
+    <div class="list-controls">
+        <label for="deptSelect">מחלקה:</label>
+        <select id="deptSelect"></select>
+
+        <label for="filterSelect">סינון סטטוס:</label>
+        <select id="filterSelect">
+            <option value="not_scanned">נותר לסרוק (מלאי מקורי)</option>
+            <option value="good">נסרק - תקין</option>
+            <option value="bad">נסרק - לא תקין</option>
+            <option value="unreg">לא רשום (חדש)</option>
+            <option value="all">הכל (ברירת מחדל: נותר לסרוק)</option>
+        </select>
+        <button id="refreshList">רענן רשימה</button>
+    </div>
+
+    <div id="listContainer">
+        <p>טוען רשימה...</p>
+    </div>
+
+</main>
+<footer>
+    <p>נבנה ע"י הסטודנטים באגף מערכות מידע בבית חולים ברזילי אשקלון © 2025</p>
+</footer>
+<script src="adminjs.js"></script>
+</body>
+</html>

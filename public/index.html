@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>סריקת מחשבים — סורק מלאי</title>
+    <link rel="stylesheet" href="styles.css" />
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; text-align: right;}
+        input, button, textarea { display:block; margin:10px 0; padding:10px; width:90%; max-width:400px; box-sizing: border-box; margin-right: auto; margin-left: auto;}
+        
+        .hidden { display:none !important; }
+        .msg { margin-top:10px; padding: 10px; border-radius: 4px; font-weight:bold; }
+        .msg.info { color:#333; background-color: #f0f0f0; }
+        
+        #assetInfo, #exceptionForm { 
+            border:1px solid #ccc; padding:10px; margin-top:15px; border-radius: 4px; 
+            max-width: 400px; margin-right: auto; margin-left: auto; text-align: right;
+        }
+        #assetDetailsText p { margin: 5px 0; line-height: 1.4; }
+        
+        header { text-align: center; border-bottom: 1px solid #eee; padding-bottom: 15px; margin-bottom: 20px;}
+        .header-logo { max-width: 150px; height: auto; margin-bottom: 10px;}
+        
+        #reader { 
+            width: 90%; 
+            max-width: 400px; 
+            margin-right: auto; 
+            margin-left: auto;
+            border: 1px solid #ccc;
+        }
+        #assetInfo label { 
+            display: inline-block; 
+            margin-right: 15px;
+            font-weight: normal;
+        }
+    </style>
+</head>
+<body>
+<header>
+    <img src="https://www.barzilaimc.org.il/_Uploads/dbsBanners/nojc1.jpg?BannerID=39" alt="לוגו בית חולים" class="header-logo">
+    <div class="header-content">
+        <h1>מערכת ניהול וספירת מלאי</h1>
+        <h2>בית החולים ברזילי</h2>
+    </div>
+</header>
+<main>
+    <section class="scanner" style="text-align: center;">
+
+        <div id="scannerSection">
+            <h3 style="margin-top: 0;">סרוק ברקוד או QR</h3>
+            <div id="reader"></div> 
+            <button id="toggleManualButton">הזנה ידנית</button>
+        </div>
+
+        <div id="manualInputSection" class="hidden">
+            <input id="manualCodeInput" type="text" placeholder="הקלד קוד ידנית" autocomplete="off" />
+            <button onclick="handleManualSearch()">חפש קוד</button>
+        </div>
+        
+        <button id="restartScanBtn" onclick="resetAppState()" class="hidden">חזור לסריקה</button>
+
+        <div id="assetInfo" class="hidden">
+            <h3>פרטי פריט שנמצא</h3>
+            <div id="assetDetailsText" style="text-align: right;"></div>
+            <hr>
+            <label style="font-weight: bold; display: block; margin-bottom: 10px;">בחר סטטוס:</label>
+            <div style="text-align: center;">
+                <input type="radio" id="statusGood" name="status" value="good" checked><label for="statusGood">תקין ✅</label>
+                <input type="radio" id="statusBad" name="status" value="bad"><label for="statusBad">לא תקין ❌</label>
+                <input type="radio" id="statusMissing" name="status" value="missing"><label for="statusMissing">חסר ❓</label>
+            </div>
+            
+            <textarea id="comments" placeholder="הערות (חובה בסטטוס לא תקין/חסר)" class="hidden"></textarea>
+            <button onclick="submitScan()">שמור סריקה</button>
+        </div>
+
+        <div id="exceptionForm" class="hidden">
+            <h3>פריט לא נמצא במלאי! (חריג)</h3>
+            <p>הקוד שנסרק: <strong id="exceptionCodeDisplay"></strong></p>
+            <textarea id="exceptionNotes" placeholder="נא לתאר את הפריט (שם, מיקום)"></textarea>
+            <button onclick="submitException()">שמור כחריג</button>
+        </div>
+
+        <p id="serverMessage" class="msg info"></p>
+    </section>
+</main>
+<footer>
+    <p>נבנה ע"י הסטודנטים באגף מערכות מידע בבית חולים ברזילי אשקלון © 2025</p>
+</footer>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

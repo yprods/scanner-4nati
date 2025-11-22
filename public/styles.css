@@ -1,0 +1,412 @@
+/* ========================================= */
+/* 1. Reset, פונטים וערכות צבעים - ניאו-מורפיזם */
+/* ========================================= */
+@import url('https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;700;900&display=swap');
+
+:root {
+    /* צבעים ניאו-מורפיים מבוססי לבן-כחול */
+    --primary-color: #007bff; /* כחול טכנולוגי */
+    --secondary-color: #5a6268; /* אפור עמוק */
+    --accent-color: #28a745; /* ירוק אישור חזק */
+    --error-color: #dc3545; /* אדום חירום */
+    --background-color: #e3edf7; /* רקע ניאו-מורפי - כחול-אפור בהיר */
+    --card-background: #ebf5fe; /* גוון בהיר יותר של הרקע לקארד */
+    --text-color-dark: #333;
+    --light-text: #ffffff;
+
+    /* הגדרות צל הניאו-מורפיזם (כהה ובהיר) - **שופר** */
+    --shadow-light: -8px -8px 16px rgba(255, 255, 255, 0.95);
+    --shadow-dark: 8px 8px 16px rgba(0, 0, 0, 0.1); /* צל כהה (הצללה) - עדין יותר */
+    --box-shadow-neumorphic: var(--shadow-dark), var(--shadow-light);
+
+    --border-radius-mega: 25px;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Heebo', Arial, sans-serif;
+    background-color: var(--background-color);
+    color: var(--text-color-dark);
+    min-height: 100vh;
+    overflow-x: hidden;
+    line-height: 1.6;
+    transition: background-color 0.5s;
+}
+
+/* ========================================= */
+/* 2. רקע מונפש - אפקט סריקה רפואית */
+/* ========================================= */
+body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: repeating-linear-gradient(
+            45deg,
+            rgba(0, 123, 255, 0.05),
+            rgba(0, 123, 255, 0.05) 15px,
+            transparent 15px,
+            transparent 30px
+    );
+    animation: scanLine 20s linear infinite; /* קו סורק איטי */
+    z-index: -2;
+    opacity: 0.5;
+}
+
+@keyframes scanLine {
+    from { background-position: 0 0; }
+    to { background-position: 400% 0; }
+}
+
+/* ========================================= */
+/* 2a. עיצוב סרגל גלילה (Webkit) - **חדש** */
+/* ========================================= */
+::-webkit-scrollbar {
+    width: 10px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--background-color);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--primary-color);
+    border-radius: 5px;
+    border: 3px solid var(--background-color);
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #0056b3; /* גוון כהה יותר של כחול */
+}
+
+
+/* ========================================= */
+/* 3. Header עם לוגו ואפקט זוהר (ממורכז) */
+/* ========================================= */
+header {
+    background-color: var(--primary-color);
+    padding: 30px 20px 30px; /* ריווח נקי יותר */
+    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.3);
+    position: relative;
+    color: var(--light-text);
+
+    /* 📐 מרכוז תוכן באמצעות Flexbox */
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* **מרכז אופקית** */
+    text-align: center;  /* מרכז טקסט */
+}
+
+/* ביטול ה-Overlay שאינו נחוץ יותר */
+header::after {
+    content: none;
+}
+
+header * {
+    position: relative;
+    z-index: 2;
+    text-shadow: 0 0 5px rgba(0, 0, 0, 0.4); /* צל קל לטקסט */
+}
+
+/* 🖼️ עיצוב הלוגו הקטן והממורכז */
+.header-logo {
+    max-width: 120px; /* גודל קטן יותר כנדרש */
+    height: auto;
+    margin-bottom: 10px; /* מרווח בין הלוגו לכותרת */
+    border-radius: 50%; /* הלוגו בעיגול */
+    border: 5px solid var(--card-background); /* גבול ניאו-מורפי */
+    box-shadow: var(--box-shadow-neumorphic); /* צל ניאו-מורפי חזק */
+    transition: transform 0.3s ease-in-out;
+}
+
+.header-logo:hover {
+    transform: scale(1.05) rotate(2deg);
+}
+
+h1 {
+    font-size: 3rem;
+    font-weight: 900;
+    letter-spacing: 2px;
+}
+
+h2 {
+    font-size: 1.5rem;
+    font-weight: 400;
+    opacity: 0.9;
+}
+
+/* ========================================= */
+/* 4. Layout ראשי ועיצוב קארד (Neumorphism) */
+/* ========================================= */
+main {
+    display: flex;
+    justify-content: center;
+    padding: 40px 20px;
+}
+
+.scanner, .admin-dashboard {
+    width: 100%;
+    max-width: 650px;
+    background: var(--card-background);
+    padding: 40px;
+    border-radius: var(--border-radius-mega);
+    box-shadow: var(--box-shadow-neumorphic); /* אפקט תלת-ממדי */
+    transition: all 0.4s ease-in-out;
+    border: none;
+    transform: translateY(0);
+}
+.scanner:hover, .admin-dashboard:hover {
+    /* מעט יותר בולט בריחוף */
+    box-shadow: 12px 12px 24px rgba(0, 0, 0, 0.15), -12px -12px 24px rgba(255, 255, 255, 1);
+}
+
+/* ========================================= */
+/* 5. רכיבי טופס ובקרה - כפתורים/אינפוטים */
+/* ========================================= */
+label {
+    display: block;
+    margin-top: 25px;
+    margin-bottom: 8px;
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: var(--secondary-color);
+}
+
+/* אפקט שקוע ל-Input/Textarea */
+input, textarea, select {
+    width: 100%; /* לוודא שהם תמיד ב-100% רוחב */
+    padding: 18px;
+    border-radius: var(--border-radius-mega);
+    border: none;
+    /* הופך את הרכיב לשקוע ברקע */
+    box-shadow: inset 5px 5px 10px rgba(0, 0, 0, 0.1), inset -5px -5px 10px rgba(255, 255, 255, 0.7);
+    transition: all 0.3s;
+    background-color: var(--background-color);
+}
+
+input:focus, textarea:focus, select:focus {
+    outline: none;
+    /* מבטל מעט את השקע בפוקוס */
+    box-shadow:
+            inset 2px 2px 5px rgba(0, 0, 0, 0.1),
+            inset -2px -2px 5px rgba(255, 255, 255, 0.7),
+            0 0 10px rgba(0, 123, 255, 0.5); /* **הוספת הילה כחולה עדינה** */
+    border: 1px solid var(--primary-color);
+}
+
+/* כפתורים - עיצוב ניאו-מורפי בולט */
+button {
+    width: 100%; /* לוודא שהם תמיד ב-100% רוחב */
+    margin-top: 20px;
+    color: var(--text-color-dark);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 15px;
+    cursor: pointer;
+    border: none;
+    border-radius: var(--border-radius-mega);
+    background-color: var(--card-background);
+    /* צל ניאו-מורפי חיצוני בולט */
+    box-shadow: var(--box-shadow-neumorphic);
+    transition: all 0.2s;
+}
+
+/* אפקט ריחוף עדין - **חדש** */
+button:hover:not(:active) {
+    transform: translateY(-2px);
+    box-shadow: 10px 10px 20px rgba(0, 0, 0, 0.2), -10px -10px 20px rgba(255, 255, 255, 1);
+}
+
+
+/* אפקט לחיצה - הופך את הכפתור לשקוע */
+button:active {
+    box-shadow: inset 5px 5px 10px rgba(0, 0, 0, 0.15), inset -5px -5px 10px rgba(255, 255, 255, 0.8);
+    color: var(--primary-color);
+    transform: scale(0.98); /* מודגש יותר */
+}
+
+/* ========================================= */
+/* 6. כפתורים ספציפיים ו-Feedback */
+/* ========================================= */
+
+/* כפתור מצלמה/סריקה - שימוש בצבע ממותג */
+#btnStartCam {
+    background-color: var(--primary-color);
+    color: var(--light-text);
+    box-shadow: 0 0 15px rgba(0, 123, 255, 0.7);
+}
+#btnStartCam:active {
+    box-shadow: inset 5px 5px 10px rgba(0, 86, 179, 0.6), inset -5px -5px 10px rgba(0, 123, 255, 0.8);
+}
+
+/* כפתור טוב (SUCCESS) - ירוק חזק */
+#btnGood {
+    background-color: var(--accent-color);
+    color: var(--light-text);
+    box-shadow: 0 0 20px rgba(40, 167, 69, 0.8);
+    animation: neonGreenPulse 2s infinite alternate;
+}
+#btnGood:active {
+    box-shadow: inset 5px 5px 10px rgba(32, 134, 55, 0.7), inset -5px -5px 10px rgba(40, 167, 69, 0.9);
+}
+
+
+/* כפתור רע (ERROR) - אדום חזק */
+#btnBad {
+    background-color: var(--error-color);
+    color: var(--light-text);
+    box-shadow: 0 0 15px rgba(220, 53, 69, 0.8);
+}
+#btnBad:active {
+    box-shadow: inset 5px 5px 10px rgba(179, 43, 56, 0.7), inset -5px -5px 10px rgba(220, 53, 69, 0.9);
+}
+
+
+/* מצבי קלט - משוב חזותי קריטי */
+input.found {
+    border: 3px solid var(--accent-color);
+    box-shadow: 0 0 15px rgba(40, 167, 69, 0.9);
+    animation: flashSuccess 0.5s ease-out;
+}
+input.notfound {
+    border: 3px solid var(--error-color);
+    box-shadow: 0 0 15px rgba(220, 53, 69, 0.9);
+    animation: shakeError 0.5s;
+}
+
+/* ========================================= */
+/* 7. פרטי פריט והודעות */
+/* ========================================= */
+#itemDetails, #badForm, #newForm {
+    padding: 30px;
+    margin-top: 40px;
+    border-radius: var(--border-radius-mega);
+    background-color: var(--card-background);
+    /* אפקט בולט אך עדין מהרקע */
+    box-shadow: 8px 8px 16px rgba(0, 0, 0, 0.1), -8px -8px 16px rgba(255, 255, 255, 0.8);
+    animation: slideInFromTop 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+h3 {
+    border-bottom: 3px solid var(--primary-color);
+    padding-bottom: 15px;
+    margin-bottom: 25px;
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--primary-color);
+    text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.1);
+}
+
+.msg {
+    margin-top: 30px;
+    padding: 25px;
+    border-radius: var(--border-radius-mega);
+    font-weight: 700;
+    text-align: center;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    animation: zoomInBounce 0.5s ease-out;
+}
+.msg.success {
+    background-color: var(--accent-color);
+    color: var(--light-text);
+}
+.msg.error {
+    background-color: var(--error-color);
+    color: var(--light-text);
+}
+
+/* ========================================= */
+/* 8. וידאו ואנימציות */
+/* ========================================= */
+#video {
+    width: 100%;
+    height: auto;
+    border: none;
+    border-radius: var(--border-radius-mega);
+    margin-bottom: 30px;
+    /* הופך את הוידאו לשקוע */
+    box-shadow: inset 5px 5px 15px rgba(0, 0, 0, 0.2), inset -5px -5px 15px rgba(255, 255, 255, 0.9);
+}
+
+#video.scanning {
+    /* טעינת אפקט זוהר כחול-ירוק סביב הוידאו */
+    box-shadow:
+            0 0 20px var(--primary-color),
+            inset 0 0 10px var(--accent-color);
+    animation: scanningPulse 1s infinite alternate;
+}
+
+/* אנימציות */
+
+@keyframes scanningPulse {
+    0% { box-shadow: 0 0 20px rgba(0, 123, 255, 0.5), inset 0 0 10px rgba(40, 167, 69, 0.5); }
+    100% { box-shadow: 0 0 30px rgba(0, 123, 255, 1), inset 0 0 15px rgba(40, 167, 69, 1); }
+}
+
+@keyframes flashSuccess {
+    0% { box-shadow: 0 0 15px rgba(40, 167, 69, 0.1); }
+    50% { box-shadow: 0 0 30px rgba(40, 167, 69, 1); }
+    100% { box-shadow: 0 0 15px rgba(40, 167, 69, 0.1); }
+}
+
+@keyframes shakeError {
+    0%, 100% { transform: translateX(0); }
+    20%, 60% { transform: translateX(-10px); }
+    40%, 80% { transform: translateX(10px); }
+}
+
+@keyframes zoomInBounce {
+    0% { opacity: 0; transform: scale(0.8); }
+    60% { opacity: 1; transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+@keyframes slideInFromTop {
+    0% { opacity: 0; transform: translateY(-50px); }
+    100% { opacity: 1; transform: translateY(0); }
+}
+
+/* ========================================= */
+/* 9. רספונסיביות */
+/* ========================================= */
+@media (max-width: 768px) {
+    header {
+        padding: 20px 15px 20px;
+    }
+    h1 {
+        font-size: 2rem;
+    }
+    h2 {
+        font-size: 1.2rem;
+    }
+    .header-logo {
+        max-width: 100px;
+    }
+    .scanner, .admin-dashboard {
+        padding: 25px;
+        border-radius: 15px;
+    }
+    input, button, textarea, select {
+        padding: 12px;
+    }
+}
+
+main {
+    flex: 1;
+    padding: 20px;
+}
+footer {
+    background: #222;
+    color: #fff;
+    text-align: center;
+    padding: 10px;
+    font-size: 14px;
+}
