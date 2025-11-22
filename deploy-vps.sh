@@ -155,24 +155,41 @@ if pm2 list | grep -q "$PM2_APP_NAME"; then
     sleep 2
 fi
 
+# ================= יצירת תיקיית לוגים =================
+mkdir -p "$PROJECT_DIR/logs"
+
 # ================= הפעלת השרת עם PM2 =================
 print_info "מפעיל את השרת עם PM2..."
 
-pm2 start server-https.js \
-    --name "$PM2_APP_NAME" \
-    --interpreter node \
-    --max-memory-restart 500M \
-    --log-date-format "YYYY-MM-DD HH:mm:ss Z" \
-    --merge-logs \
-    --error-log "$PROJECT_DIR/logs/error.log" \
-    --out-log "$PROJECT_DIR/logs/out.log" \
-    --env HTTPS_PORT=$HTTPS_PORT
-
-if [ $? -eq 0 ]; then
-    print_success "השרת הופעל עם PM2"
+# בדיקה אם יש קובץ config
+if [ -f "$PROJECT_DIR/pm2.config.js" ]; then
+    print_info "משתמש ב-pm2.config.js"
+    pm2 start pm2.config.js
+    
+    if [ $? -eq 0 ]; then
+        print_success "השרת הופעל עם PM2 (מ-config)"
+    else
+        print_error "שגיאה בהפעלת השרת"
+        exit 1
+    fi
 else
-    print_error "שגיאה בהפעלת השרת"
-    exit 1
+    print_info "מפעיל ישירות..."
+    pm2 start server-https.js \
+        --name "$PM2_APP_NAME" \
+        --interpreter node \
+        --max-memory-restart 500M \
+        --log-date-format "YYYY-MM-DD HH:mm:ss Z" \
+        --merge-logs \
+        --error-log "$PROJECT_DIR/logs/error.log" \
+        --out-log "$PROJECT_DIR/logs/out.log" \
+        --env HTTPS_PORT=$HTTPS_PORT
+    
+    if [ $? -eq 0 ]; then
+        print_success "השרת הופעל עם PM2"
+    else
+        print_error "שגיאה בהפעלת השרת"
+        exit 1
+    fi
 fi
 
 # ================= שמירת הגדרות PM2 =================
