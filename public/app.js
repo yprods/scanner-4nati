@@ -14,45 +14,30 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
-// בדיקת הרשאות מצלמה
-async function checkCameraPermission() {
-    try {
-        // בדיקה אם יש גישה ל-navigator.mediaDevices
-        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-            return { granted: false, error: 'הדפדפן לא תומך בגישה למצלמה' };
+// הצגת הודעת טעינה
+function showLoadingMessage(message) {
+    const scannerSection = document.getElementById('scannerSection');
+    if (scannerSection && !scannerSection.innerHTML.includes('מתחיל סורק')) {
+        if (!originalScannerContent) {
+            originalScannerContent = scannerSection.innerHTML;
         }
-
-        // בדיקת הרשאה קיימת
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-        // אם הצלחנו, נסגור את ה-stream מיד ונחזיר true
-        stream.getTracks().forEach(track => track.stop());
-        return { granted: true };
-    } catch (err) {
-        if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-            return { granted: false, error: 'הרשאה למצלמה נדחתה' };
-        } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
-            return { granted: false, error: 'לא נמצאה מצלמה' };
-        }
-        return { granted: false, error: err.message };
+        scannerSection.innerHTML = `
+            <div style="padding: 40px; text-align: center;">
+                <div style="font-size: 48px; margin-bottom: 20px;">⏳</div>
+                <p style="color: #666; font-size: 16px;">${message}</p>
+                <p style="color: #999; font-size: 14px; margin-top: 10px;">
+                    אם תופיע בקשה, אנא לחץ "אפשר"
+                </p>
+            </div>
+        `;
     }
 }
 
-// בקשת הרשאה למצלמה
-async function requestCameraPermission() {
-    try {
-        const stream = await navigator.mediaDevices.getUserMedia({ 
-            video: { 
-                facingMode: 'environment' // מצלמה אחורית ב-mobile
-            } 
-        });
-        // נסגור את ה-stream מיד - רק רצינו לבדוק הרשאה
-        stream.getTracks().forEach(track => track.stop());
-        return { granted: true };
-    } catch (err) {
-        if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-            return { granted: false, error: 'הרשאה למצלמה נדחתה. אנא אפשר גישה למצלמה בהגדרות הדפדפן.' };
-        }
-        return { granted: false, error: err.message };
+// הסתרת הודעת טעינה
+function hideLoadingMessage() {
+    const scannerSection = document.getElementById('scannerSection');
+    if (scannerSection && scannerSection.innerHTML.includes('מתחיל סורק')) {
+        restoreScannerContent();
     }
 }
 
@@ -63,15 +48,20 @@ async function startScanner() {
     const readerEl = document.getElementById('reader');
     if (!readerEl) return;
 
-    // בדיקת הרשאות לפני התחלת הסורק
-    const permissionCheck = await checkCameraPermission();
-    if (!permissionCheck.granted) {
-        // נסה לבקש הרשאה
-        const permissionRequest = await requestCameraPermission();
-        if (!permissionRequest.granted) {
-            showPermissionError(permissionRequest.error || permissionCheck.error);
-            return;
-        }
+    // בדיקה אם הדפדפן תומך
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        showPermissionError('הדפדפן לא תומך בגישה למצלמה. אנא השתמש בדפדפן מודרני.');
+        return;
+    }
+
+    // בדיקה אם זה HTTPS או localhost (נדרש ב-iOS Safari)
+    const isSecure = window.location.protocol === 'https:' || 
+                     window.location.hostname === 'localhost' || 
+                     window.location.hostname === '127.0.0.1';
+    
+    if (!isSecure && /iPhone|iPad|iPod/.test(navigator.userAgent)) {
+        showPermissionError('ב-iOS Safari נדרש HTTPS לגישה למצלמה. אנא השתמש ב-HTTPS או localhost.');
+        return;
     }
 
     try {
@@ -106,7 +96,10 @@ async function startScanner() {
             }
         };
 
-        // התחלת סריקה עם ה-API הנכון
+        // הצגת הודעה שהסורק מתחיל
+        showLoadingMessage('מתחיל סורק...');
+
+        // התחלת סריקה - זה יבקש הרשאה אוטומטית
         await html5Qrcode.start(
             { facingMode: "environment" },
             config,
@@ -117,17 +110,35 @@ async function startScanner() {
         isScanning = true;
         console.log('סורק ברקודים הופעל בהצלחה');
         
-        // הסתרת הודעת שגיאה אם הייתה
+        // הסתרת הודעות
+        hideLoadingMessage();
         hidePermissionError();
         
     } catch (err) {
         console.error('שגיאה בהפעלת הסורק:', err);
+        hideLoadingMessage();
         
         // בדיקה אם זו שגיאת הרשאה
-        if (err.name === 'NotAllowedError' || err.message.includes('permission') || err.message.includes('Permission')) {
-            showPermissionError('הרשאה למצלמה נדחתה. אנא אפשר גישה למצלמה בהגדרות הדפדפן.');
+        const errorMessage = err.message || err.toString();
+        const isPermissionError = err.name === 'NotAllowedError' || 
+                                  err.name === 'PermissionDeniedError' ||
+                                  errorMessage.includes('permission') || 
+                                  errorMessage.includes('Permission') ||
+                                  errorMessage.includes('denied') ||
+                                  errorMessage.includes('NotAllowed');
+        
+        if (isPermissionError) {
+            let message = 'הרשאה למצלמה נדחתה. ';
+            if (/iPhone|iPad|iPod/.test(navigator.userAgent)) {
+                message += 'ב-iPhone: הגדרות > Safari > מצלמה > אפשר';
+            } else {
+                message += 'אנא אפשר גישה למצלמה בהגדרות הדפדפן.';
+            }
+            showPermissionError(message);
+        } else if (errorMessage.includes('NotFound') || errorMessage.includes('no camera')) {
+            showPermissionError('לא נמצאה מצלמה במכשיר.');
         } else {
-            alert('שגיאה בהפעלת המצלמה: ' + err.message);
+            showPermissionError('שגיאה בהפעלת המצלמה: ' + errorMessage);
         }
         html5Qrcode = null;
     }
@@ -153,9 +164,20 @@ function showPermissionError(message) {
                 <button id="retryPermissionBtn" style="padding: 12px 24px; background-color: #6366f1; color: white; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; margin-bottom: 10px;">
                     נסה שוב
                 </button>
-                <p style="margin-top: 20px; font-size: 14px; color: #999; line-height: 1.6;">
-                    <strong>ב-iPhone Safari:</strong><br/>
-                    הגדרות > Safari > מצלמה > אפשר
+                <div style="margin-top: 20px; padding: 15px; background-color: #f0f0f0; border-radius: 8px; text-align: right;">
+                    <p style="font-size: 14px; color: #333; margin-bottom: 10px; font-weight: bold;">
+                        הוראות ל-iPhone Safari:
+                    </p>
+                    <ol style="font-size: 13px; color: #666; line-height: 1.8; text-align: right; padding-right: 20px;">
+                        <li>פתח את אפליקציית הגדרות</li>
+                        <li>גלול למטה ולחץ על "Safari"</li>
+                        <li>גלול למטה ולחץ על "מצלמה"</li>
+                        <li>בחר "אפשר"</li>
+                        <li>חזור לאפליקציה ולחץ "נסה שוב"</li>
+                    </ol>
+                </div>
+                <p style="margin-top: 15px; font-size: 12px; color: #999;">
+                    <strong>הערה:</strong> ב-iOS Safari נדרש HTTPS או localhost לגישה למצלמה
                 </p>
             </div>
         `;
