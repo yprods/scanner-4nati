@@ -369,8 +369,27 @@ app.get('/api/departments', async (req, res) => {
 // ================= הפעלה =================
 async function startServer(port) {
     return new Promise((resolve, reject) => {
-        const server = app.listen(port, () => {
-            console.log(`🚀 השרת פעיל בכתובת: http://localhost:${port}`);
+        // האזנה על 0.0.0.0 כדי להיות נגיש ממכשירים אחרים ברשת
+        const server = app.listen(port, '0.0.0.0', () => {
+            const networkInterfaces = os.networkInterfaces();
+            let localIP = 'localhost';
+            
+            // מציאת כתובת IP מקומית
+            for (const interfaceName in networkInterfaces) {
+                const interfaces = networkInterfaces[interfaceName];
+                for (const iface of interfaces) {
+                    if (iface.family === 'IPv4' && !iface.internal) {
+                        localIP = iface.address;
+                        break;
+                    }
+                }
+                if (localIP !== 'localhost') break;
+            }
+            
+            console.log(`🚀 השרת פעיל!`);
+            console.log(`   מקומי: http://localhost:${port}`);
+            console.log(`   רשת:   http://${localIP}:${port}`);
+            console.log(`   API:    http://${localIP}:${port}/api`);
             initDB();
             resolve(server);
         });
