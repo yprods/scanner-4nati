@@ -61,21 +61,48 @@ function hideLoadingMessage() {
 // בקשת הרשאה מפורשת למצלמה
 async function requestCameraPermissionExplicit() {
     try {
-        // בדיקה אם הדפדפן תומך
-        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-            throw new Error('הדפדפן לא תומך בגישה למצלמה');
+        // בדיקה אם הדפדפן תומך - בדיקה מקיפה יותר
+        if (!navigator.mediaDevices) {
+            // נסה fallback ל-getUserMedia הישן
+            if (navigator.getUserMedia) {
+                console.warn('משתמש ב-getUserMedia הישן');
+            } else {
+                throw new Error('הדפדפן לא תומך בגישה למצלמה. אנא השתמש בדפדפן מודרני (Chrome, Firefox, Safari).');
+            }
         }
 
         // בדיקה אם זה HTTPS או localhost (נדרש ב-iOS Safari ו-Android Chrome)
         const isSecure = window.location.protocol === 'https:' || 
                          window.location.hostname === 'localhost' || 
-                         window.location.hostname === '127.0.0.1';
+                         window.location.hostname === '127.0.0.1' ||
+                         window.location.hostname.endsWith('.onion'); // Tor
         
         const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
         const isAndroid = /Android/.test(navigator.userAgent);
         
         if (!isSecure && (isIOS || isAndroid)) {
             throw new Error('נדרש HTTPS לגישה למצלמה ב-mobile. אנא השתמש ב-HTTPS.');
+        }
+
+        // בדיקה אם getUserMedia זמין
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            // נסה fallback
+            if (navigator.getUserMedia) {
+                return new Promise((resolve, reject) => {
+                    navigator.getUserMedia(
+                        { video: { facingMode: "environment" } },
+                        (stream) => {
+                            stream.getTracks().forEach(track => track.stop());
+                            resolve({ granted: true });
+                        },
+                        (err) => {
+                            reject(err);
+                        }
+                    );
+                });
+            } else {
+                throw new Error('הדפדפן לא תומך בגישה למצלמה. אנא השתמש בדפדפן מודרני.');
+            }
         }
 
         // בקשת הרשאה מפורשת
@@ -94,10 +121,12 @@ async function requestCameraPermissionExplicit() {
         
         if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
             return { granted: false, error: 'הרשאה נדחתה' };
-        } else if (err.name === 'NotFoundError' || err.message.includes('no camera')) {
+        } else if (err.name === 'NotFoundError' || err.message.includes('no camera') || err.message.includes('not found')) {
             return { granted: false, error: 'לא נמצאה מצלמה' };
-        } else {
+        } else if (err.message.includes('not supported') || err.message.includes('לא תומך')) {
             return { granted: false, error: err.message };
+        } else {
+            return { granted: false, error: err.message || 'שגיאה לא ידועה' };
         }
     }
 }
@@ -113,6 +142,12 @@ async function startScanner() {
         return;
     }
 
+    // בדיקה ראשונית אם הדפדפן תומך
+    if (!navigator.mediaDevices && !navigator.getUserMedia) {
+        showPermissionError('הדפדפן לא תומך בגישה למצלמה. אנא השתמש בדפדפן מודרני (Chrome, Firefox, Safari, Edge).');
+        return;
+    }
+
     // הצגת הודעה שהסורק מתחיל
     showLoadingMessage('מבקש הרשאה למצלמה...');
 
@@ -125,6 +160,13 @@ async function startScanner() {
         
         const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
         const isAndroid = /Android/.test(navigator.userAgent);
+        const isSecure = window.location.protocol === 'https:' || 
+                         window.location.hostname === 'localhost' || 
+                         window.location.hostname === '127.0.0.1';
+        
+        if (!isSecure && (isIOS || isAndroid)) {
+            message = 'נדרש HTTPS לגישה למצלמה ב-mobile. ';
+        }
         
         if (isIOS) {
             message += 'ב-iPhone: הגדרות > Safari > מצלמה > אפשר';
