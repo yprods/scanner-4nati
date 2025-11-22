@@ -132,17 +132,36 @@ print_success "תיקיות מוכנות"
 # ================= הגדרת Firewall =================
 print_info "בודק הגדרות Firewall..."
 
+FIREWALL_FIXED=false
+
 if command -v ufw &> /dev/null; then
     print_info "מאפשר פורט $HTTPS_PORT ב-ufw..."
-    sudo ufw allow $HTTPS_PORT/tcp 2>/dev/null || true
-    print_success "Firewall מוגדר"
+    if sudo ufw allow $HTTPS_PORT/tcp 2>/dev/null; then
+        sudo ufw reload 2>/dev/null || true
+        print_success "Firewall מוגדר (UFW)"
+        FIREWALL_FIXED=true
+    else
+        print_warning "לא ניתן לפתוח פורט ב-UFW (אולי צריך הרשאות)"
+    fi
 elif command -v firewall-cmd &> /dev/null; then
     print_info "מאפשר פורט $HTTPS_PORT ב-firewalld..."
-    sudo firewall-cmd --permanent --add-port=$HTTPS_PORT/tcp 2>/dev/null || true
-    sudo firewall-cmd --reload 2>/dev/null || true
-    print_success "Firewall מוגדר"
+    if sudo firewall-cmd --permanent --add-port=$HTTPS_PORT/tcp 2>/dev/null; then
+        sudo firewall-cmd --reload 2>/dev/null || true
+        print_success "Firewall מוגדר (firewalld)"
+        FIREWALL_FIXED=true
+    else
+        print_warning "לא ניתן לפתוח פורט ב-firewalld"
+    fi
 else
-    print_warning "לא נמצא firewall manager. ודא שהפורט $HTTPS_PORT פתוח"
+    print_warning "לא נמצא firewall manager מקומי"
+fi
+
+if [ "$FIREWALL_FIXED" = false ]; then
+    print_warning "⚠️  חשוב: ודא שהפורט $HTTPS_PORT פתוח ב-VPS provider שלך!"
+    print_info "   - AWS: Security Groups"
+    print_info "   - DigitalOcean: Firewall Rules"
+    print_info "   - Google Cloud: Firewall Rules"
+    print_info "   - Azure: Network Security Groups"
 fi
 
 # ================= עצירת PM2 אם כבר רץ =================
@@ -242,5 +261,10 @@ fi
 echo ""
 print_warning "זכור: זהו אישור self-signed. הדפדפן יציג אזהרת אבטחה."
 print_info "לפרודקשן, השתמש באישור אמיתי מ-Let's Encrypt"
+echo ""
+print_info "אם השרת לא נגיש מבחוץ:"
+print_info "  1. הרץ: ./check-server.sh (לבדיקה)"
+print_info "  2. הרץ: sudo ./fix-access.sh (לתיקון)"
+print_info "  3. ודא שהפורט $HTTPS_PORT פתוח ב-VPS provider שלך!"
 echo ""
 
