@@ -26,6 +26,15 @@ app.use(bodyParser.urlencoded({ extended: true }));
 // הגשת קבצים סטטיים
 app.use(express.static(path.join(__dirname, 'public')));
 
+// נתיב בדיקה - לבדיקה שהשרת עובד
+app.get('/health', (req, res) => {
+    res.json({ 
+        status: 'ok', 
+        message: 'Server is running',
+        timestamp: new Date().toISOString()
+    });
+});
+
 // נתיב ראשי
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
