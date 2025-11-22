@@ -4,57 +4,106 @@ let html5Qrcode = null;
 let isScanning = false;
 let currentItemData = null;
 
-// הפעלה ראשונית בטעינת הדף
-document.addEventListener('DOMContentLoaded', () => {
-    // המתן קצת כדי לוודא שה-DOM נטען לגמרי
-    setTimeout(() => {
-        const readerEl = document.getElementById('reader');
-        if (readerEl) {
-            startScanner();
-        } else {
-            console.error('Element with id="reader" not found!');
-            // נסה שוב אחרי עוד קצת זמן
-            setTimeout(() => {
-                if (document.getElementById('reader')) {
-                    startScanner();
-                } else {
-                    showPermissionError('שגיאה בטעינת הדף. אנא רענן את הדף.');
-                }
-            }, 500);
+// פונקציה לבדיקה שהאלמנטים קיימים
+function waitForElement(selector, timeout = 5000) {
+    return new Promise((resolve, reject) => {
+        const element = document.querySelector(selector);
+        if (element) {
+            resolve(element);
+            return;
         }
-    }, 100);
-    
-    const toggleBtn = document.getElementById('toggleManualButton');
-    if(toggleBtn) toggleBtn.addEventListener('click', toggleManualInput);
-    document.querySelectorAll('input[name="status"]').forEach(radio => {
-        radio.addEventListener('change', toggleComments);
+
+        const observer = new MutationObserver((mutations, obs) => {
+            const element = document.querySelector(selector);
+            if (element) {
+                obs.disconnect();
+                resolve(element);
+            }
+        });
+
+        observer.observe(document.body, {
+            childList: true,
+            subtree: true
+        });
+
+        setTimeout(() => {
+            observer.disconnect();
+            reject(new Error(`Element ${selector} not found after ${timeout}ms`));
+        }, timeout);
     });
-});
+}
+
+// הפעלה ראשונית בטעינת הדף
+function initApp() {
+    console.log('Initializing app...');
+    
+    // המתן לאלמנטים להיטען
+    Promise.all([
+        waitForElement('#reader'),
+        waitForElement('#toggleManualButton')
+    ]).then(() => {
+        console.log('All elements found, starting scanner...');
+        
+        // הפעלת הסורק
+        startScanner();
+        
+        // הגדרת event listeners
+        const toggleBtn = document.getElementById('toggleManualButton');
+        if(toggleBtn) toggleBtn.addEventListener('click', toggleManualInput);
+        
+        document.querySelectorAll('input[name="status"]').forEach(radio => {
+            radio.addEventListener('change', toggleComments);
+        });
+    }).catch((error) => {
+        console.error('Error waiting for elements:', error);
+        // המתן קצת לפני הצגת שגיאה כדי לוודא שהפונקציות מוגדרות
+        setTimeout(() => {
+            if (typeof showPermissionError === 'function') {
+                showPermissionError('שגיאה בטעינת הדף. אנא רענן את הדף.');
+            } else {
+                alert('שגיאה בטעינת הדף. אנא רענן את הדף.');
+            }
+        }, 100);
+    });
+}
+
+// הפעלה כשהדף נטען
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initApp);
+} else {
+    // הדף כבר נטען
+    initApp();
+}
 
 // הצגת הודעת טעינה
 function showLoadingMessage(message) {
     const scannerSection = document.getElementById('scannerSection');
-    if (scannerSection && !scannerSection.innerHTML.includes('מתחיל סורק')) {
-        if (!originalScannerContent) {
-            originalScannerContent = scannerSection.innerHTML;
-        }
-        scannerSection.innerHTML = `
-            <div style="padding: 40px; text-align: center;">
-                <div style="font-size: 48px; margin-bottom: 20px;">⏳</div>
-                <p style="color: #666; font-size: 16px;">${message}</p>
-                <p style="color: #999; font-size: 14px; margin-top: 10px;">
-                    אם תופיע בקשה, אנא לחץ "אפשר"
-                </p>
-            </div>
-        `;
+    if (!scannerSection) return;
+    
+    // בדוק אם יש כבר הודעת טעינה
+    let loadingDiv = document.getElementById('loadingMessage');
+    if (!loadingDiv) {
+        loadingDiv = document.createElement('div');
+        loadingDiv.id = 'loadingMessage';
+        loadingDiv.style.cssText = 'padding: 20px; text-align: center; background: #f0f9ff; border-radius: 8px; margin-bottom: 20px;';
+        scannerSection.insertBefore(loadingDiv, scannerSection.firstChild);
     }
+    
+    loadingDiv.innerHTML = `
+        <div style="font-size: 48px; margin-bottom: 10px;">⏳</div>
+        <p style="color: #666; font-size: 16px; margin: 0;">${message}</p>
+        <p style="color: #999; font-size: 14px; margin-top: 10px; margin-bottom: 0;">
+            אם תופיע בקשה, אנא לחץ "אפשר"
+        </p>
+    `;
+    loadingDiv.style.display = 'block';
 }
 
 // הסתרת הודעת טעינה
 function hideLoadingMessage() {
-    const scannerSection = document.getElementById('scannerSection');
-    if (scannerSection && scannerSection.innerHTML.includes('מתחיל סורק')) {
-        restoreScannerContent();
+    const loadingDiv = document.getElementById('loadingMessage');
+    if (loadingDiv) {
+        loadingDiv.style.display = 'none';
     }
 }
 
@@ -133,11 +182,24 @@ async function requestCameraPermissionExplicit() {
 
 async function startScanner() {
     // אם הסורק כבר פעיל, לא ניצור חדש
-    if (isScanning || html5Qrcode) return;
+    if (isScanning || html5Qrcode) {
+        console.log('Scanner already running or initialized');
+        return;
+    }
 
-    const readerEl = document.getElementById('reader');
+    // המתן לאלמנט להיות זמין
+    let readerEl;
+    try {
+        readerEl = await waitForElement('#reader', 3000);
+        console.log('Reader element found:', readerEl);
+    } catch (error) {
+        console.error('Reader element not found:', error);
+        showPermissionError('שגיאה: לא נמצא אלמנט הסורק. אנא רענן את הדף.');
+        return;
+    }
+    
     if (!readerEl) {
-        console.error('Element with id="reader" not found!');
+        console.error('Element with id="reader" is null!');
         showPermissionError('שגיאה: לא נמצא אלמנט הסורק. אנא רענן את הדף.');
         return;
     }
@@ -181,6 +243,15 @@ async function startScanner() {
     }
 
     try {
+        // ודא שהאלמנט עדיין קיים לפני יצירת הסורק
+        const readerElement = document.getElementById('reader');
+        if (!readerElement) {
+            console.error('Reader element not found when trying to create scanner!');
+            hideLoadingMessage();
+            showPermissionError('שגיאה: אלמנט הסורק לא נמצא. אנא רענן את הדף.');
+            return;
+        }
+        
         // יצירת אובייקט Html5Qrcode חדש
         html5Qrcode = new Html5Qrcode("reader");
         
