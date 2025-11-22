@@ -225,6 +225,9 @@ print_info "  pm2 stop $PM2_APP_NAME       # עצירה"
 print_info "  pm2 delete $PM2_APP_NAME    # מחיקה"
 print_info "  pm2 monit                    # מעקב בזמן אמת"
 echo ""
+print_info "עדכון מ-Git:"
+print_info "  git fetch origin && git reset --hard origin/main && npm install && pm2 restart $PM2_APP_NAME"
+echo ""
 
 # קבלת כתובת IP
 PUBLIC_IP=$(curl -s ifconfig.me 2>/dev/null || curl -s icanhazip.com 2>/dev/null || echo "YOUR_VPS_IP")
