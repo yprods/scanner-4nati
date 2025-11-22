@@ -6,7 +6,24 @@ let currentItemData = null;
 
 // הפעלה ראשונית בטעינת הדף
 document.addEventListener('DOMContentLoaded', () => {
-    startScanner();
+    // המתן קצת כדי לוודא שה-DOM נטען לגמרי
+    setTimeout(() => {
+        const readerEl = document.getElementById('reader');
+        if (readerEl) {
+            startScanner();
+        } else {
+            console.error('Element with id="reader" not found!');
+            // נסה שוב אחרי עוד קצת זמן
+            setTimeout(() => {
+                if (document.getElementById('reader')) {
+                    startScanner();
+                } else {
+                    showPermissionError('שגיאה בטעינת הדף. אנא רענן את הדף.');
+                }
+            }, 500);
+        }
+    }, 100);
+    
     const toggleBtn = document.getElementById('toggleManualButton');
     if(toggleBtn) toggleBtn.addEventListener('click', toggleManualInput);
     document.querySelectorAll('input[name="status"]').forEach(radio => {
@@ -90,7 +107,11 @@ async function startScanner() {
     if (isScanning || html5Qrcode) return;
 
     const readerEl = document.getElementById('reader');
-    if (!readerEl) return;
+    if (!readerEl) {
+        console.error('Element with id="reader" not found!');
+        showPermissionError('שגיאה: לא נמצא אלמנט הסורק. אנא רענן את הדף.');
+        return;
+    }
 
     // הצגת הודעה שהסורק מתחיל
     showLoadingMessage('מבקש הרשאה למצלמה...');
